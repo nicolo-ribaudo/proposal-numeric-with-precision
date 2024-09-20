@@ -1,6 +1,7 @@
 # "Numeric values with precision" proposal
 
 **Champions**: Jesse Alama (Igalia)
+
 **Authors**: Jesse Alama (Igalia), Nicolò Ribaudo (Igalia)
 
 **Stage**: Not presented yet to TC39
