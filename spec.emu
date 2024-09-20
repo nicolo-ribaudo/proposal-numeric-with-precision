@@ -13,7 +13,7 @@ contributors: Jesse Alama, Nicolò Ribaudo
   <h1>Numbers and Dates</h1>
 
   <emu-clause id="sec-withfractionaldigits">
-    <h1>Numerics with Fractional Digits</h1>
+    <h1><ins>Numerics with Fractional Digits</ins></h1>
     <p>A WithFractionalDigits is an object that specifies how another object, such as a Number, can be enriched with additional information about its precision and how that additional precision can be presented. WithFractionalDigits objects are not instantiable; they are created, instead, by calling a suitable method in any object that has the `withFractionalDigits` method in its prototype.</p>
     <emu-clause id="sec-withfractionaldigits-prototype">
       <h1>The %WithFractionalDigitsPrototype% Object</h1>
@@ -24,6 +24,28 @@ contributors: Jesse Alama, Nicolò Ribaudo
         <li>has a [[Prototype]] internal slot whose value is Object.prototype.</li>
         <li>has the following properties:</li>
       </ul>
+
+      <emu-clause id="sec-createwithfractionaldigitsobject" type="abstract operation">
+        <h1>
+          CreateWithFractionalDigitsObject (
+            _numeric_: a Number or a Decimal128 object,
+            _digits_: an ECMAScript language value,
+          ): either a normal completion containing an object or a throw completion
+        </h1>
+        <dl class="header">
+          <dt>description</dt>
+          <dd></dd>
+        </dl>
+        <emu-alg>
+          1. If _digits_ is not a Number, throw a *TypeError* exception.
+          1. If _digits_ is *NaN*<sub>𝔽</sub>, *+∞<sub>𝔽</sub>*, or *+∞<sub>𝔽</sub>*, throw a *RangeError* exception.
+          1. If ℝ(_digits_) is not an integer, throw a *TypeError* exception.
+          1. Let _obj_ be OrdinaryObjectCreate(%WithFractionalDigitsPrototype%, « [[Number]], [[Precision]] »).
+          1. Set _obj_.[[NumericValue]] to _numeric_.
+          1. Set _obj_.[[FractionalDigits]] to ℝ(_digits_).
+          1. Return _obj_.
+        </emu-alg>
+      </emu-clause>
 
       <emu-clause id="sec-%withfractionaldigitprototype%.numericObject">
         <h1>get %WithFractionalDigitsPrototype%.numericObject</h1>
@@ -40,7 +62,7 @@ contributors: Jesse Alama, Nicolò Ribaudo
         <emu-alg>
           1. Let _O_ be the *this* value.
           1. Perform ? RequireInternalSlot(_O_, [[FractionalDigits]]).
-          1. Return _O_.[[FractionalDigits]].
+          1. Return 𝔽(_O_.[[FractionalDigits]]).
         </emu-alg>
       </emu-clause>
 
@@ -62,9 +84,10 @@ contributors: Jesse Alama, Nicolò Ribaudo
           1. Perform ? RequireInternalSlot(_O_, [[FractionalDigits]]).
           1. Let _N_ be _O_.[[NumericValue]].
           1. Let _digits_ be _O_.[[FractionalDigits]].
+          1. If _digits_ &lt; 0, set _digits_ to 0.
           1. If _N_ has a [[Decimal128Data]] internal slot, then
-            1. Return ? Call(%Decimal.prototype.toFixed%, _N_, « _digits_ »).
-          1. Return ? Call(%Number.prototype.toFixed%, _N_, « _digits_ »).
+            1. Return ? Call(%Decimal.prototype.toFixed%, _N_, « 𝔽(_digits_) »).
+          1. Return ? Call(%Number.prototype.toFixed%, _N_, « 𝔽(_digits_) »).
         </emu-alg>
       </emu-clause>
 
@@ -84,6 +107,29 @@ contributors: Jesse Alama, Nicolò Ribaudo
           1. Return FormatNumeric(_numberFormat_, _number_, _O_.[[FractionalDigits]]).
         </emu-alg>
       </emu-clause>
+    </emu-clause>
+  </emu-clause>
+
+  <emu-clause id="number-and-decimal">
+    <h1>Changes to Number and Decimal128 prototypes</h1>
+
+    <emu-clause id="sec-decimal128.prototype.withfractionaldigits">
+      <h1><ins>Decimal128.prototype.withFractionalDigits ( _digits_ )</ins></h1>
+      <p>This method performs the following steps when called:</p>
+      <emu-alg>
+        1. Let _O_ be the *this* value.
+        1. Perform ? RequireInternalSlot(_O_, [[Decimal128Data]]).
+        1. Return ? CreateWithFractionalDigitsObject(_O_, _digits_).
+      </emu-alg>
+    </emu-clause>
+
+    <emu-clause id="sec-number.prototype.withfractionaldigits">
+      <h1><ins>Number.prototype.withFractionalDigits ( _digits_ )</ins></h1>
+      <p>This method performs the following steps when called:</p>
+      <emu-alg>
+        1. Let _number_ be ? ThisNumberValue(*this* value).
+        1. Return ? CreateWithFractionalDigitsObject(_number_, _digits_).
+      </emu-alg>
     </emu-clause>
   </emu-clause>
 </emu-clause>
