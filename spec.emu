@@ -4,17 +4,17 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/github.min.css">
 <script src="./spec.js"></script>
 <pre class="metadata">
-title: Proposal Title Goes Here
+title: Numeric value with fractional digits
 stage: -1
-contributors: Your Name(s) Here
+contributors: Jesse Alama, Nicolò Ribaudo
 </pre>
 
-<emu-clause id="sec-numbers-and-dates">
+<emu-clause id="sec-numbers-and-dates" number="21">
   <h1>Numbers and Dates</h1>
 
   <emu-clause id="sec-withfractionaldigits">
     <h1>Numerics with Fractional Digits</h1>
-    <p>A WithFractionalDigits is an object that specifies how another object, such as a Number, can be enriched with additional information about its precision and how that additional precision can be presented. WithPrecision objects are not instantiable; they are created, instead, by calling a suitable method in any object that has the `withPrecision` method in its prototype.</p>
+    <p>A WithFractionalDigits is an object that specifies how another object, such as a Number, can be enriched with additional information about its precision and how that additional precision can be presented. WithFractionalDigits objects are not instantiable; they are created, instead, by calling a suitable method in any object that has the `withFractionalDigits` method in its prototype.</p>
     <emu-clause id="sec-withfractionaldigits-prototype">
       <h1>The %WithFractionalDigitsPrototype% Object</h1>
       <p>The <dfn>%WithFractionalDigitsPrototype%</dfn> object:</p>
@@ -25,53 +25,62 @@ contributors: Your Name(s) Here
         <li>has the following properties:</li>
       </ul>
 
-      <emu-clause id="sec-%withprecisionprototype%.number">
-        <h1>get %WithFractionalDigitsPrototype%.number</h1>
-        <p>The underlying <q>number</q> value. It may not necessarily be a Number.</p>
+      <emu-clause id="sec-%withfractionaldigitprototype%.numericObject">
+        <h1>get %WithFractionalDigitsPrototype%.numericObject</h1>
+        <emu-alg>
+          1. Let _O_ be the *this* value.
+          1. Perform ? RequireInternalSlot(_O_, [[FractionalDigits]]).
+          1. Let _N_ be _O_.[[NumericValue]].
+          1. Return ! ToObject(_N_).
+        </emu-alg>
       </emu-clause>
 
-      <emu-clause id="sec-%withprecisionprototype%.precision">
-        <h1>get %WithFractionalDigitsPrototype%.precision</h1>
-        <p>The <q>precision</q> that the number is understood to have.</p>
+      <emu-clause id="sec-%withfractionaldigitprototype%.fractionalDigits">
+        <h1>get %WithFractionalDigitsPrototype%.fractionalDigits</h1>
+        <emu-alg>
+          1. Let _O_ be the *this* value.
+          1. Perform ? RequireInternalSlot(_O_, [[FractionalDigits]]).
+          1. Return _O_.[[FractionalDigits]].
+        </emu-alg>
       </emu-clause>
 
-      <emu-clause id="sec-%withprecisionprototype%.valueof">
+      <emu-clause id="sec-%withfractionaldigitprototype%.valueof">
         <h1>%WithFractionalDigitsPrototype%.valueOf ( )</h1>
         <emu-alg>
           1. Let _O_ be the *this* value.
-          1. Perform ? RequireInternalSlot(_O_, [[Precision]]).
-          1. Let _N_ be _O_.[[Number]].
+          1. Perform ? RequireInternalSlot(_O_, [[FractionalDigits]]).
+          1. Let _N_ be _O_.[[NumericValue]].
           1. Return ? ToPrimitive(_N_).
         </emu-alg>
       </emu-clause>
 
-      <emu-clause id="sec-%withprecisionprototype%.tostring">
+      <emu-clause id="sec-%withfractionaldigitprototype%.tostring">
         <h1>%WithFractionalDigitsPrototype%.toString ( )</h1>
         <p>This function performs the following steps when called:</p>
         <emu-alg>
           1. Let _O_ be the *this* value.
-          1. Perform ? RequireInternalSlot(_O_, [[Prototype]]).
-          1. If _O_.[[Prototype]] is not %WithFractionalDigitsPrototype%, throw an *TypeError* exception.
-          1. Let _N_ be _O_.[[Number]].
-          1. Return ? ToString(_N_).
+          1. Perform ? RequireInternalSlot(_O_, [[FractionalDigits]]).
+          1. Let _N_ be _O_.[[NumericValue]].
+          1. Let _digits_ be _O_.[[FractionalDigits]].
+          1. If _N_ has a [[Decimal128Data]] internal slot, then
+            1. Return ? Call(%Decimal.prototype.toFixed%, _N_, « _digits_ »).
+          1. Return ? Call(%Number.prototype.toFixed%, _N_, « _digits_ »).
         </emu-alg>
       </emu-clause>
 
-      <emu-clause id="sec-%withprecisionprototype%.tolocalestring">
-        <h1>%WithFractionalDigitsPrototype%.toLocaleString ( [ _lang_ [ , _options_ ] ] )</h1>
+      <emu-clause id="sec-%withfractionaldigitprototype%.tolocalestring">
+        <h1>%WithFractionalDigitsPrototype%.toLocaleString ( [ _locales_ [ , _options_ ] ] )</h1>
+
+        <emu-note type="editor">
+          <p>This will be defined in ECMA-402</p>
+        </emu-note>
+
         <p>This function performs the following steps when called:</p>
         <emu-alg>
           1. Let _O_ be the *this* value.
-          1. Perform ? RequireInternalSlot(_O_, [[Prototype]]).
-          1. If _O_.[[Prototype]] is not %WithFractionalDigitsPrototype%, throw an *TypeError* exception.
-          1. If _options_ is *undefined*, set _options_ to OrdinaryObjectCreate(*false*, « [[minimumFractionalDigits]], [[maximumFractionalDigits]] »).
-          1. If _options_ is not an Object, throw a *TypeError* exception.
-          1. Let _N_ be ! Get(_O_, *"number"*).
-          1. Let _P_ be ! Get(_O_, *"precision"*).
-          1. Let _toLocaleString_ be ! Get(_N_, *"toLocaleString"*).
-          1. Set _options_.[[minimumFractionalDigits]] to _P_.
-          1. Set _options_.[[maximumFractionalDigits]] to _P_.
-          1. Return ? Call(_N_, _toLocaleString_, « _lang_, _options_ »).
+          1. Perform ? RequireInternalSlot(_O_, [[FractionalDigits]]).
+          1. Let _numberFormat_ be ? Construct(%Intl.NumberFormat%, « _locales_ , _options_ »).
+          1. Return FormatNumeric(_numberFormat_, _O_).
         </emu-alg>
       </emu-clause>
     </emu-clause>
