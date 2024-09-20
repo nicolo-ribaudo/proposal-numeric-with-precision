@@ -33,6 +33,8 @@ The various `Intl` utilities that work with numbers would recognize these object
 
 This "numeric value with precision" concept could be extended to be a protocol based on a well-known symbol. This would allow libraries to provide their own classes that wrap either a `Decimal` or a `Number`, and that support different ways of propagating precision through arithmetic operations.
 
+There would probably also be `Number.parseWithFractionalDigits` and `Decimal.parseWithFractionalDigits` methods that parse a string and return a numeric value together with the number of fractional digits (i.e. `Number.parseWithFractionalDigits("1.20")` would return an object with `number` set to `1.2` and `precision` set to `2`).
+
 ## Examples
 
 <details open>
