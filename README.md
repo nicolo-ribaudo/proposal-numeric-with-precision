@@ -33,11 +33,160 @@ The various `Intl` utilities that work with numbers would recognize these object
 
 This "numeric value with precision" concept could be extended to be a protocol based on a well-known symbol. This would allow libraries to provide their own classes that wrap either a `Decimal` or a `Number`, and that support different ways of propagating precision through arithmetic operations.
 
+## Examples
+
+<details open>
+<summary>Computing an avergage rating for a resturant, formatting it with one fractional digit, and showing the result:</summary>
+
+```js
+const ratings = [2, 0, 0, 1, 3, 0];
+
+const average = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+const averageWithPrecision = average.withFractionalDigits(1);
+
+const pr = new Intl.PluralRules('en');
+const plurals = { one: 'star', other: 'stars' };
+
+console.log(`The restaurant has ${averageWithPrecision.toLocaleString("en")} ${plurals[pr.select(averageWithPrecision)]}`);
+```
+
+</details>
+
+<details open>
+<summary>Propagating precision through arithmetic operations acording to IEEE-754:</summary>
+
+```js
+const IEEE_754 = {
+  add(a, b) {
+    return a.number.add(b.number).withFractionalDigits(Math.min(a.precision, b.precision));
+  },
+  sub(a, b) {
+    return a.number.sub(b.number).withFractionalDigits(Math.min(a.precision, b.precision));
+  },
+  multiply(a, b) {
+    return a.number.mul(b.number).withFractionalDigits(a.precision + b.precision);
+  },
+  divide(a, b) {
+    return a.number.div(b.number).withFractionalDigits(a.precision - b.precision);
+  },
+};
+
+IEEE_754.add(
+  new Decimal("1.2").withFractionalDigits(3),
+  new Decimal("0.03").withFractionalDigits(5)
+).toString(); // "1.230"
+```
+
+</details>
+
+<details>
+<summary>Propagating precision through arithmetic operations according to confidence intervals, and rounding the resulting interval radius to a power of 10:</summary>
+
+```js
+function computeCapacitorVoltage(charges, capacitance) {
+  // formula: ΔV = ∑qᵢ / C
+
+  const totalCharge = charges.reduce((tot, q) => tot + q.number, 0);
+  const chargeError = charges.reduce((err, q) => err + 10 ** -q.precision, 0);
+
+  const capacitanceError = 10 ** -capacitance.precision;
+
+  const voltage = totalCharge / capacitance.number;
+  const voltageError = (chargeError + capacitanceError * voltage) / capacitance.number;
+
+  const fractionalDigits = Math.floor(-Math.log10(voltageError));
+  return voltage.withFractionalDigits(fractionalDigits);
+}
+```
+
+</details>
+
+<details>
+<summary>Using a custom class that wraps a `Decimal` and propagates error, implementing the "numeric with precision" protocol:</summary>
+
+```js
+class DecimalWithError {
+  constructor(value, error) {
+    this.#value = decimal;
+    this.#error = error;
+  }
+
+  toString() {
+    return `${this.#value} ± ${this.#error}`;
+  }
+
+  add(other) {
+    return new DecimalWithError(
+      this.#value.add(other.#value),
+      this.#error.add(other.#error)
+    );
+  }
+
+  subtract(other) {
+    return new DecimalWithError(
+      this.#value.subtract(other.#value),
+      this.#error.add(other.#error)
+    );
+  }
+
+  multiply(other) {
+    return new DecimalWithError(
+      this.#value.multiply(other.#value),
+      this.#error.multiply(other.#value).add(other.#error.multiply(this.#value))
+    );
+  }
+
+  divide(other) {
+    const result = this.#value.divide(other.#value);
+    return new DecimalWithError(
+      result,
+      other.#error.multiply(result).add(this.#error).divide(other.#error)
+    );
+  }
+
+  scale(factor) {
+    return new DecimalWithError(
+      this.#value.multiply(factor),
+      this.#error.multiply(factor)
+    );
+  }
+
+  [Symbol.withFractionalDigit]() {
+    const fractionalDigits = Math.floor(-Math.log10(Number(this.#error)));
+    return this.#value.withFractionalDigits(fractionalDigits);
+  }
+}
+
+function computeCapacitorVoltage(charges, capacitance) {
+  // formula: ΔV = ∑qᵢ / C
+
+  const totalCharge = charges.reduce((a, b) => a.add(b));
+  return totalCharge.divide(capacitance);
+}
+
+const voltage = computeCapacitorVoltage(
+  [
+    new DecimalWithError(new Decimal("1.2"), new Decimal("0.001")),
+    new DecimalWithError(new Decimal("1.8"), new Decimal("0.001")),
+    new DecimalWithError(new Decimal("0.3"), new Decimal("0.0005"))
+  ],
+  new DecimalWithError(new Decimal("0.035"), new Decimal("0.0002"))
+);
+const voltage1000 = voltage.scale(-1000);
+
+console.log(voltage1000.toString()); // "0.09428571428571428571428571428571428 ± 0.0006102040816326530612244897959183673"
+console.log(voltage1000[Symbol.withFractionalDigit]().precision); // 3
+console.log(voltage1000[Symbol.withFractionalDigit]().number); // Decimal { 0.094 }
+console.log(new Intl.NumberFormat("en").format(voltage) + " kV"); // "0.094 kV"
+```
+
+</details>
+
 ## Open questions
 
 **Fractional or significant digits?**
 
-The current proposal uses fractional digits, but it could be changed to support significant digits as well. For some use cases (Intl, and accounting) fractional digits are better, but for others (measurements) significant digits are more appropriate.
+The current proposal uses fractional digits, but it could be changed to support significant digits as well. For some use cases (Intl, and accounting) fractional digits are better, but for others significant digits may be more appropriate.
 
 Assuming that the proposal supports negative numbers of fractional digits (for example, `10` with precision `-1` means that the number is `10` but the last digit is not significant), the two approaches are equivalent. The conversion between one and the other is:
 - _significantDigits_ = _fractionalDigits_ + ceil(log10(abs(_number_))).
@@ -52,3 +201,7 @@ Assuming that the proposal supports negative numbers of fractional digits (for e
 **Should this be supported on BigInts?**
 
 BigInts do not have fractional digits, but the concept of precision also applies to them.
+
+**Relationship with the "smart units" proposal**
+
+There is a proposal under development that defines an object that holds a number together with a measurment unit (such as `2 kg`, or `3 inches`). The proposals could be combined to represent "a number with extra properties", or they could be kept separate and composable.
