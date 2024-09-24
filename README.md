@@ -107,7 +107,7 @@ function computeCapacitorVoltage(charges, capacitance) {
 </details>
 
 <details>
-<summary>Using a custom class that wraps a `Decimal` and propagates error, implementing the "numeric with precision" protocol:</summary>
+<summary>Using a custom class that wraps a <code>Decimal</code> and propagates error, implementing the "numeric with precision" protocol:</summary>
 
 ```js
 class DecimalWithError {
