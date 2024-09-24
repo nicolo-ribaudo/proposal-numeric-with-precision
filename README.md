@@ -8,7 +8,10 @@
 
 ## Use cases and goals
 
-While usually numeric values are interpreted as points on a number line, so that 1.2 and 1.20 represent the same entity, this is not always the case. One example where this matters is when measuring physical quantities, where 1.20 might indicate a much more precise measurement than 1.2. Another example is when displaying values to users: when displaying "1 _something_" you use singular terms, while "1.0 _something_" requires a plural.
+While usually numeric values are interpreted as points on a number line, so that 1.2 and 1.20 represent the same entity, this is not always the case. Some examples where this matters are:
+- when representing physical measurements, "1.2 meaters" and "1.20 meaters" include informtion about the resolution of the measurement tool, which can affect how you use that value and how you combine it with others
+- when displaying numeric values, wether they have trailing zeroes or not can affect how the word that they are describing is pluralized (e.g. _"1 star"_ vs _"1.0 stars"_). When using Intl, you are currently required to pass the same precision data to multiple constructors/functions to make sure that they they behave coherently, and don't result in, for example _"1.0 star"_.
+- when interacting with external numeric systems that do preserve/expose precision (for examples, complete implementations of IEEE 754's decimal128 type), you may want to be able to round-trip values as they are, without changing the meaning that the external system might give to them.
 
 The [Decimal](https://github.com/tc39/proposal-decimal) proposal could be originally used to solve this problem, as it used to expose the number of fractional difits of a Decimal value. However, this feature has been removed by the proposal because:
 - it would prevent from ever introducing a primitive `"decimal"` type in the future for which `Decimal` is the wrapper object, because `1.0 === 1.00` would mean that the two values are not observably different;
