@@ -9,7 +9,7 @@
 ## Use cases and goals
 
 While usually numeric values are interpreted as points on a number line, so that 1.2 and 1.20 represent the same entity, this is not always the case. Some examples where this matters are:
-- when representing physical measurements, "1.2 meaters" and "1.20 meaters" include informtion about the resolution of the measurement tool, which can affect how you use that value and how you combine it with others
+- when representing physical measurements, "1.2 meters" and "1.20 meters" include informtion about the resolution of the measurement tool, which can affect how you use that value and how you combine it with others
 - when displaying numeric values, wether they have trailing zeroes or not can affect how the word that they are describing is pluralized (e.g. _"1 star"_ vs _"1.0 stars"_). When using Intl, you are currently required to pass the same precision data to multiple constructors/functions to make sure that they they behave coherently, and don't result in, for example _"1.0 star"_.
 - when interacting with external numeric systems that do preserve/expose precision (for examples, complete implementations of IEEE 754's decimal128 type), you may want to be able to round-trip values as they are, without changing the meaning that the external system might give to them.
 
